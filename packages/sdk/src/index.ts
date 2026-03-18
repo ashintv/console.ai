@@ -1,342 +1,166 @@
 import type { CreateEventInput } from '@console-ai/domain';
 
 /**
- * Configuration options for the Console AI SDK
+ * Console AI Configuration
  */
 export interface ConsoleAIConfig {
   /** API key for authentication */
   apiKey: string;
   /** Base URL of the Console AI API (default: http://localhost:3000) */
   baseUrl?: string;
-  /** Enable debug logging */
-  debug?: boolean;
-  /** Automatically capture unhandled errors */
-  autoCapture?: boolean;
+  /** Mode: 'log' (print to console) or 'trace' (save to database) */
+  mode?: 'log' | 'trace';
   /** Programming language (auto-detected if not provided) */
   language?: string;
-  /** Framework name (e.g., 'React', 'Express', 'Next.js') */
+  /** Framework name (e.g., 'React', 'Express') */
   framework?: string;
-  /** Additional metadata to include with all errors */
-  metadata?: Record<string, any>;
 }
 
 /**
- * Error data to be submitted
- */
-export interface ErrorData {
-  /** Error message */
-  message: string;
-  /** Stack trace */
-  stack?: string;
-  /** Source file where error occurred */
-  source?: string;
-  /** Programming language */
-  language?: string;
-  /** Framework name */
-  framework?: string;
-  /** Additional metadata */
-  metadata?: Record<string, any>;
-}
-
-/**
- * Response from error submission
- */
-export interface ErrorResponse {
-  event: {
-    id: string;
-    message: string;
-    stack?: string;
-    source?: string;
-    language: string;
-    framework?: string;
-    aiAnalysis?: string;
-    metadata?: Record<string, any>;
-    createdAt: string;
-  };
-}
-
-/**
- * Console AI SDK Client
+ * Console AI - AI-powered error logging
  * 
- * A lightweight client for tracking and analyzing errors with AI.
+ * Drop-in replacement for console.error with AI explanations
  * 
  * @example
  * ```typescript
  * import { ConsoleAI } from '@console-ai/sdk';
  * 
- * const client = new ConsoleAI({
+ * const consoleAI = new ConsoleAI({
  *   apiKey: 'your-api-key',
- *   language: 'typescript',
- *   framework: 'Express',
- *   autoCapture: true
+ *   mode: 'log' // or 'trace' for production
  * });
  * 
- * // Manual error tracking
- * try {
- *   // your code
- * } catch (error) {
- *   await client.captureError(error);
- * }
+ * // Use like console.error
+ * consoleAI.error(new Error('Something went wrong'));
  * ```
  */
 export class ConsoleAI {
-  private config: Required<ConsoleAIConfig>;
-  private isInitialized: boolean = false;
+  private apiKey: string;
+  private baseUrl: string;
+  private mode: 'log' | 'trace';
+  private language: string;
+  private framework?: string;
 
   constructor(config: ConsoleAIConfig) {
-    this.config = {
-      apiKey: config.apiKey,
-      baseUrl: config.baseUrl || 'http://localhost:3000',
-      debug: config.debug || false,
-      autoCapture: config.autoCapture || false,
-      language: config.language || this.detectLanguage(),
-      framework: config.framework || '',
-      metadata: config.metadata || {},
-    };
+    this.apiKey = config.apiKey;
+    this.baseUrl = config.baseUrl || 'http://localhost:3000';
+    this.mode = config.mode || 'log';
+    this.language = config.language || this.detectLanguage();
+    this.framework = config.framework;
 
-    if (!this.config.apiKey) {
+    if (!this.apiKey) {
       throw new Error('API key is required');
     }
+  }
 
-    if (this.config.autoCapture) {
-      this.setupAutoCapture();
+  /**
+   * Log an error with AI explanation
+   * 
+   * Works like console.error but with AI-powered insights
+   */
+  async error(...args: any[]): Promise<void> {
+    // Extract error information
+    const error = args[0];
+    let message: string;
+    let stack: string | undefined;
+
+    if (error instanceof Error) {
+      message = error.message;
+      stack = error.stack;
+    } else {
+      message = String(error);
     }
 
-    this.isInitialized = true;
-    this.log('Console AI SDK initialized');
-  }
+    // Extract source from stack if available
+    const source = stack ? this.extractSource(stack) : undefined;
 
-  /**
-   * Capture and submit an error
-   */
-  async captureError(error: Error | string, context?: Partial<ErrorData>): Promise<ErrorResponse> {
-    const errorData = this.prepareErrorData(error, context);
-    return this.submitError(errorData);
-  }
-
-  /**
-   * Capture an exception with additional context
-   */
-  async captureException(error: Error, context?: {
-    source?: string;
-    metadata?: Record<string, any>;
-  }): Promise<ErrorResponse> {
-    return this.captureError(error, context);
-  }
-
-  /**
-   * Capture a message as an error
-   */
-  async captureMessage(message: string, context?: Partial<ErrorData>): Promise<ErrorResponse> {
-    return this.captureError(message, context);
-  }
-
-  /**
-   * Submit error data directly
-   */
-  async submitError(errorData: ErrorData): Promise<ErrorResponse> {
+    // Prepare payload
     const payload: CreateEventInput = {
-      message: errorData.message,
-      stack: errorData.stack,
-      source: errorData.source,
-      language: errorData.language || this.config.language,
-      framework: errorData.framework || this.config.framework,
-      metadata: {
-        ...this.config.metadata,
-        ...errorData.metadata,
-        timestamp: new Date().toISOString(),
-        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
-      },
+      message,
+      stack,
+      source,
+      language: this.language,
+      framework: this.framework,
     };
 
     try {
-      const response = await fetch(`${this.config.baseUrl}/errors`, {
+      // Send to API
+      const response = await fetch(`${this.baseUrl}/errors`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': this.config.apiKey,
+          'X-API-Key': this.apiKey,
         },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to submit error');
+        throw new Error(`API error: ${response.status}`);
       }
 
       const result = await response.json();
-      this.log('Error submitted successfully:', result.event.id);
-      return result;
-    } catch (error) {
-      this.log('Failed to submit error:', error);
-      throw error;
-    }
-  }
 
-  /**
-   * Wrap a function to automatically capture errors
-   */
-  wrap<T extends (...args: any[]) => any>(fn: T, context?: Partial<ErrorData>): T {
-    const self = this;
-    return (async function wrapped(...args: Parameters<T>) {
-      try {
-        return await fn(...args);
-      } catch (error) {
-        await self.captureError(error as Error, {
-          ...context,
-          source: context?.source || fn.name || 'anonymous',
-        });
-        throw error;
-      }
-    }) as T;
-  }
-
-  /**
-   * Create a context-aware error capturer
-   */
-  withContext(context: Partial<ErrorData>) {
-    return {
-      captureError: (error: Error | string) => this.captureError(error, context),
-      captureException: (error: Error) => this.captureException(error, context),
-      captureMessage: (message: string) => this.captureMessage(message, context),
-    };
-  }
-
-  /**
-   * Prepare error data from various input types
-   */
-  private prepareErrorData(error: Error | string, context?: Partial<ErrorData>): ErrorData {
-    let message: string;
-    let stack: string | undefined;
-    let source: string | undefined;
-
-    if (error instanceof Error) {
-      message = error.message;
-      stack = error.stack;
-      
-      // Try to extract source file from stack trace
-      if (stack && !context?.source) {
-        const match = stack.match(/at .+ \((.+?):(\d+):(\d+)\)/);
-        if (match) {
-          source = match[1];
+      // Mode: log - Print error + AI explanation to console
+      if (this.mode === 'log') {
+        console.error('\n❌ Error:', message);
+        if (stack) {
+          console.error('\n📍 Stack Trace:');
+          console.error(stack);
         }
+        if (result.event.aiAnalysis) {
+          console.error('\n🤖 AI Explanation:');
+          console.error(result.event.aiAnalysis);
+        }
+        console.error('\n' + '─'.repeat(80) + '\n');
       }
-    } else {
-      message = String(error);
-    }
+      
+      // Mode: trace - Just save to database (silent)
+      // In trace mode, errors are saved but not printed
+      // Users can view them in the dashboard
 
-    return {
-      message,
-      stack: context?.stack || stack,
-      source: context?.source || source,
-      language: context?.language || this.config.language,
-      framework: context?.framework || this.config.framework,
-      metadata: context?.metadata,
-    };
+    } catch (apiError) {
+      // Fallback to regular console.error if API fails
+      console.error('ConsoleAI API Error:', apiError);
+      console.error('Original error:', ...args);
+    }
   }
 
   /**
-   * Setup automatic error capture
+   * Log a warning (alias for error with lower severity)
    */
-  private setupAutoCapture(): void {
-    if (typeof window !== 'undefined') {
-      // Browser environment
-      window.addEventListener('error', (event) => {
-        this.captureError(event.error || event.message, {
-          source: event.filename,
-          metadata: {
-            line: event.lineno,
-            column: event.colno,
-          },
-        });
-      });
-
-      window.addEventListener('unhandledrejection', (event) => {
-        this.captureError(event.reason, {
-          metadata: {
-            type: 'unhandledRejection',
-          },
-        });
-      });
-    } else if (typeof process !== 'undefined') {
-      // Node.js environment
-      process.on('uncaughtException', (error) => {
-        this.captureError(error).then(() => {
-          // Allow time for error to be sent before exiting
-          setTimeout(() => process.exit(1), 100);
-        });
-      });
-
-      process.on('unhandledRejection', (reason) => {
-        this.captureError(reason as Error, {
-          metadata: {
-            type: 'unhandledRejection',
-          },
-        });
-      });
-    }
-
-    this.log('Auto-capture enabled');
+  async warn(...args: any[]): Promise<void> {
+    return this.error(...args);
   }
 
   /**
-   * Detect programming language from environment
+   * Extract source file from stack trace
+   */
+  private extractSource(stack: string): string | undefined {
+    const match = stack.match(/at .+ \((.+?):(\d+):(\d+)\)/) || 
+                  stack.match(/at (.+?):(\d+):(\d+)/);
+    return match ? match[1] : undefined;
+  }
+
+  /**
+   * Detect programming language
    */
   private detectLanguage(): string {
     if (typeof window !== 'undefined') {
       return 'javascript';
     }
-    
     if (typeof process !== 'undefined') {
-      // Check for TypeScript
-      if (process.execPath.includes('tsx') || process.execPath.includes('ts-node')) {
-        return 'typescript';
-      }
       return 'javascript';
     }
-
-    return 'unknown';
-  }
-
-  /**
-   * Log debug messages
-   */
-  private log(...args: any[]): void {
-    if (this.config.debug) {
-      console.log('[ConsoleAI]', ...args);
-    }
-  }
-
-  /**
-   * Get current configuration
-   */
-  getConfig(): Readonly<ConsoleAIConfig> {
-    return { ...this.config };
-  }
-
-  /**
-   * Update configuration
-   */
-  updateConfig(updates: Partial<ConsoleAIConfig>): void {
-    this.config = {
-      ...this.config,
-      ...updates,
-    };
-    this.log('Configuration updated');
+    return 'javascript';
   }
 }
 
 /**
- * Create a Console AI client instance
+ * Create a Console AI instance
  */
-export function createClient(config: ConsoleAIConfig): ConsoleAI {
+export function createConsoleAI(config: ConsoleAIConfig): ConsoleAI {
   return new ConsoleAI(config);
 }
-
-// Export utilities and integrations
-export * from './types.js';
-export * from './utils.js';
-export * from './integrations.js';
 
 // Export types
 export type { CreateEventInput } from '@console-ai/domain';
