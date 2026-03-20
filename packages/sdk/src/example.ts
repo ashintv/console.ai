@@ -10,7 +10,7 @@ async function main() {
 
   // Initialize ConsoleAI
   const consoleAI = new ConsoleAI({
-    apiKey: 'cai_VdZtfMVONOf092rJV9NxQ8UgUoHFVOiMd-R5QM9u9JXJcVBU', // Replace with your actual API key
+    apiKey: 'cai_goB3aCpaI2oUaBifVE08JB9vLV6lIpSZTheq9F2GF4bIF91Q', // Replace with your actual API key
     mode: 'trace', // 'log' = print to console, 'trace' = save to database only
     language: 'typescript',
     framework: 'Node.js',

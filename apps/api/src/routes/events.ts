@@ -3,7 +3,7 @@ import { db } from '../db';
 import { events, apiKeys, projects } from '../db/schema';
 import { createEventSchema } from '@console-ai/domain';
 import { eq, and, desc } from 'drizzle-orm';
-import { apiKeyMiddleware, authMiddleware } from '../middleware/auth';
+import { apiKeyMiddleware, authMiddleware } from '../middleware';
 import { AppContext } from '../types';
 import { ZodError } from 'zod';
 

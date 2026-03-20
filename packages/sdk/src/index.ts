@@ -8,7 +8,7 @@ function cleanMarkdown(text: string): string {
   // Store code blocks with placeholders
   const codeBlocks: string[] = [];
   let codeBlockIndex = 0;
-  
+
   // Extract and style code blocks
   text = text.replace(/```[\s\S]*?```/g, (match) => {
     const code = match.replace(/```\w*\n?/g, '').trim();
@@ -18,38 +18,50 @@ function cleanMarkdown(text: string): string {
     codeBlockIndex++;
     return '\n' + placeholder + '\n';
   });
-  
+
+  // Process section headers (##) - Add visual separation with emojis
+  text = text.replace(/^##\s+(.+)$/gm, (match, headerText) => {
+    const icons: Record<string, string> = {
+      'Current Code': '📍',
+      'Reasons': '🔍',
+      'Fixes': '✅',
+      'Updated Code': '💻',
+    };
+    const icon = Object.entries(icons).find(([key]) => headerText.includes(key))?.[1] || '→';
+    return '\n' + chalk.bold.cyan(`${icon} ${headerText.trim()}`) + '\n';
+  });
+
   // Process inline code with color
   text = text.replace(/`([^`]+)`/g, (match, code) => chalk.cyan(code));
-  
+
   // Remove bold but keep text
   text = text.replace(/\*\*([^*]+)\*\*/g, '$1');
-  
+
   // Remove italic but keep text
   text = text.replace(/\*([^*]+)\*/g, '$1');
-  
+
   // Convert headers to uppercase with spacing
   text = text.replace(/^#{1,6}\s+(.+)$/gm, (match, headerText) =>
     '\n' + chalk.bold.yellow(headerText.toUpperCase()) + '\n'
   );
-  
+
   // Remove links but keep text
   text = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-  
+
   // Convert list markers to bullets with proper indentation
   text = text.replace(/^\s*[-*+]\s+/gm, '  • ');
-  
+
   // Convert numbered lists to bullets with proper indentation
   text = text.replace(/^\s*\d+\.\s+/gm, '  • ');
-  
+
   // Clean up multiple blank lines
   text = text.replace(/\n{3,}/g, '\n\n');
-  
+
   // Restore code blocks
   codeBlocks.forEach((styledCode, index) => {
     text = text.replace(`__CODE_BLOCK_${index}__`, styledCode);
   });
-  
+
   // Add proper spacing around paragraphs
   return text
     .split('\n\n')
@@ -135,7 +147,7 @@ export class ConsoleAI {
 
   /**
    * Log an error with AI explanation
-   * 
+   *
    * Works like console.error but with AI-powered insights
    */
   async error(...args: any[]): Promise<void> {
@@ -153,6 +165,8 @@ export class ConsoleAI {
 
     // Extract source from stack if available
     const source = stack ? this.extractSource(stack) : undefined;
+    const functionName = stack ? this.extractFunction(stack) : undefined;
+    const functionContext = stack ? await this.extractFunctionCode(stack) : undefined;
 
     // Prepare payload
     const payload: CreateEventInput = {
@@ -161,6 +175,8 @@ export class ConsoleAI {
       source,
       language: this.language,
       framework: this.framework,
+      functionName,
+      functionContext,
     };
 
     try {
@@ -182,18 +198,32 @@ export class ConsoleAI {
 
       // Mode: log - Print error + AI explanation to console
       if (this.mode === 'log') {
-        console.error('\n❌ Error:', message);
-        if (stack) {
-          console.error('\n📍 Stack Trace:');
-          console.error(stack);
+        console.error('\n' + '═'.repeat(80));
+        console.error(chalk.bold.red('❌ ERROR DETECTED'));
+        console.error('═'.repeat(80));
+
+        console.error('\n' + chalk.bold('Message:'), message);
+
+        if (functionName) {
+          console.error(chalk.bold('\n📍 Function:'), functionName);
         }
+        if (functionContext) {
+          console.error('\n' + chalk.bold('📄 Code Context:'));
+          console.error(functionContext);
+        }
+        if (source) {
+          console.error(chalk.bold('\n📁 Source:'), source);
+        }
+
         if (result.event.aiAnalysis) {
-          console.error('\n🤖 AI Explanation:');
+          console.error('\n' + '═'.repeat(80));
+          console.error(chalk.bold.cyan('🤖 AI Analysis:'));
+          console.error('═'.repeat(80) + '\n');
           console.error(cleanMarkdown(result.event.aiAnalysis));
         }
-        console.error('\n' + '─'.repeat(80) + '\n');
+        console.error('\n' + '═'.repeat(80) + '\n');
       }
-      
+
       // Mode: trace - Just save to database (silent)
       // In trace mode, errors are saved but not printed
       // Users can view them in the dashboard
@@ -210,6 +240,81 @@ export class ConsoleAI {
    */
   async warn(...args: any[]): Promise<void> {
     return this.error(...args);
+  }
+
+  /**
+   * Extract function name from stack trace
+   */
+  private extractFunction(stack: string): string | undefined {
+    // Match function name from stack trace
+    // Patterns: "at functionName (file:line:col)" or "at functionName"
+    const match = stack.match(/at\s+([^\s(]+)/);
+    return match ? match[1] : undefined;
+  }
+
+  /**
+   * Detect if running in Node.js environment
+   */
+  private isNodeEnvironment(): boolean {
+    // Check for Node.js process object
+    if (typeof process !== 'undefined' && process.versions?.node) {
+      console.log('[SDK] Environment: Node.js');
+      return true;
+    }
+    console.log('[SDK] Environment: Browser');
+    return false;
+  }
+
+  /**
+   * Extract function code context from stack trace (source code lines)
+   */
+  private async extractFunctionCode(stack: string): Promise<string | undefined> {
+    try {
+      // Match file and line number
+      const match = stack.match(/at\s+\S+\s+\((.+?):(\d+):/);
+      if (!match) {
+        console.log('[SDK] No file path found in stack trace');
+        return undefined;
+      }
+
+      const [, filePath, lineNum] = match;
+      const lineNumber = parseInt(lineNum);
+      console.log(`[SDK] Extracting code context from: ${filePath}:${lineNumber}`);
+
+      // Try to read source file in Node.js
+      if (this.isNodeEnvironment()) {
+        try {
+          const { readFileSync, existsSync } = await import('fs');
+          if (existsSync(filePath)) {
+            const source = readFileSync(filePath, 'utf-8');
+            const lines = source.split('\n');
+
+            // Extract surrounding lines for context (3 before, 3 after error line)
+            const contextStart = Math.max(0, lineNumber - 4);
+            const contextEnd = Math.min(lines.length, lineNumber + 3);
+            const context = lines
+              .slice(contextStart, contextEnd)
+              .map((line, idx) => {
+                const lineNum = contextStart + idx + 1;
+                const marker = lineNum === lineNumber ? '> ' : '  ';
+                return `${marker}${lineNum.toString().padEnd(4)} | ${line}`;
+              })
+              .join('\n');
+
+            console.log('[SDK] Function code context extracted successfully');
+            return context;
+          } else {
+            console.log(`[SDK] File not found: ${filePath}`);
+          }
+        } catch (e) {
+          console.log(`[SDK] Failed to read file: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        }
+      }
+    } catch (e) {
+      console.log(`[SDK] Error extracting function code: ${e instanceof Error ? e.message : 'Unknown error'}`);
+    }
+
+    return undefined;
   }
 
   /**

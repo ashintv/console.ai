@@ -4,10 +4,14 @@ import { users } from '../db/schema';
 import { signupSchema, signinSchema, updateUserSchema } from '@console-ai/domain';
 import { hashPassword, verifyPassword, generateToken } from '../utils/auth';
 import { eq } from 'drizzle-orm';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware, createAuthRateLimit } from '../middleware';
 import { ZodError } from 'zod';
 
 const app = new Hono();
+
+// Apply stricter rate limiting to auth endpoints
+app.use('/signup', createAuthRateLimit());
+app.use('/signin', createAuthRateLimit());
 
 // POST /users/signup
 app.post('/signup', async (c) => {

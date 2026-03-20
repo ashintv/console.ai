@@ -1,7 +1,9 @@
 export interface Event {
     message: string,
-    stack: string | undefined,
-    source: string | undefined,
+    stack?: string,
+    source?: string,
     language: string,
-    framework: string | undefined
+    framework?: string,
+    functionName?: string,
+    functionContext?: string
 }

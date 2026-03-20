@@ -3,7 +3,7 @@ import { db } from '../db';
 import { projects, apiKeys } from '../db/schema';
 import { createProjectSchema, updateProjectSchema, createApiKeySchema } from '@console-ai/domain';
 import { eq, and } from 'drizzle-orm';
-import { authMiddleware } from '../middleware/auth';
+import { authMiddleware } from '../middleware';
 import { generateApiKey } from '../utils/auth';
 import { AppContext } from '../types';
 import { ZodError } from 'zod';

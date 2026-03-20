@@ -4,6 +4,11 @@ export type AppContext = {
   Variables: {
     userId: string;
     apiKey: string;
+    rateLimit?: {
+      limit: number;
+      current: number;
+      remaining: number;
+    };
   };
 };
 

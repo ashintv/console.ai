@@ -1,6 +1,6 @@
+import 'dotenv/config';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
 import { serve } from '@hono/node-server';
 import { AppContext } from './types';
 
@@ -9,15 +9,35 @@ import projectsRouter from './routes/projects';
 import eventsRouter from './routes/events';
 import errorsRouter from './routes/errors';
 
+import {
+  logger,
+  createGlobalRateLimit,
+  createAuthRateLimit,
+  securityHeaders,
+  validation,
+} from './middleware';
+
 const app = new Hono<AppContext>();
 
-// Middleware
-app.use('*', logger());
+// Security and logging middleware (order matters!)
+// 1. Rate limiting - should be first to protect against brute force
+app.use('*', createGlobalRateLimit());
+
+// 2. Enhanced logger - log all requests
+app.use('*', logger({ level: 'info' }));
+
+// 3. Security headers
+app.use('*', securityHeaders());
+
+// 4. CORS
 app.use('*', cors({
   origin: '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
 }));
+
+// 5. Request validation
+app.use('*', validation({ maxJsonSize: 1024 * 1024 }));
 
 // Health check
 app.get('/', (c) => {

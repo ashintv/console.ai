@@ -58,6 +58,8 @@ export const events = pgTable('events', {
     source: text('source'),
     language: varchar('language', { length: 50 }).notNull(),
     framework: varchar('framework', { length: 100 }),
+    functionName: varchar('function_name', { length: 255 }),
+    functionContext: text('function_context'),
     aiAnalysis: text('ai_analysis'),
     metadata: jsonb('metadata'),
     createdAt: timestamp('created_at').defaultNow().notNull(),

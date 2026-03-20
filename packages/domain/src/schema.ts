@@ -58,6 +58,8 @@ export const createEventSchema = z.object({
   source: z.string().optional(),
   language: z.string().min(1, 'Language is required').max(50),
   framework: z.string().max(100).optional(),
+  functionName: z.string().optional(),
+  functionContext: z.string().optional(),
   metadata: z.record(z.any()).optional(),
 });
 
