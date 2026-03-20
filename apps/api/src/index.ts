@@ -1,7 +1,6 @@
 import 'dotenv/config';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { serve } from '@hono/node-server';
 import { AppContext } from './types';
 
 import usersRouter from './routes/users';
@@ -65,16 +64,6 @@ app.onError((err, c) => {
   return c.json({ error: 'Internal server error' }, 500);
 });
 
-const port = parseInt(process.env.PORT || '3000');
-
-console.log(`🚀 Server starting on port ${port}...`);
-
-serve({
-  fetch: app.fetch,
-  port,
-});
-
-console.log(`✅ Server running at http://localhost:${port}`);
-
+export default app;
 
 // Made with Bob
