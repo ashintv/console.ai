@@ -86,7 +86,7 @@ export function logger(options: LoggerOptions = {}) {
       await next();
 
       const duration = Date.now() - startTime;
-      const status = (c.res as Response).status || 200;
+      const status = ((c.res as any).status as number) || 200;
       const userId = c.get('userId');
 
       // Prepare log entry
@@ -103,7 +103,7 @@ export function logger(options: LoggerOptions = {}) {
       };
 
       // Get response size if available
-      const responseContentLength = (c.res as Response).headers.get('Content-Length');
+      const responseContentLength = ((c.res as any).headers?.get?.('Content-Length')) as string | null;
       if (responseContentLength) {
         logEntry.responseSize = parseInt(responseContentLength, 10);
       }
