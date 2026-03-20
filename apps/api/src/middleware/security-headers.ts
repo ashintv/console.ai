@@ -1,5 +1,5 @@
 import { Next } from 'hono';
-import { AppContextType } from '../types';
+import { AppContextType } from '../types.js';
 
 export interface SecurityHeadersOptions {
   contentSecurityPolicy?: string | false;

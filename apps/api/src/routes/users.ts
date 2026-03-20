@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import { db } from '../db';
-import { users } from '../db/schema';
+import { db } from '../db/index.js';
+import { users } from '../db/schema.js';
 import { signupSchema, signinSchema, updateUserSchema } from '@console-ai/domain';
-import { hashPassword, verifyPassword, generateToken } from '../utils/auth';
+import { hashPassword, verifyPassword, generateToken } from '../utils/auth.js';
 import { eq } from 'drizzle-orm';
-import { authMiddleware, createAuthRateLimit } from '../middleware';
+import { authMiddleware, createAuthRateLimit } from '../middleware/index.js';
 import { ZodError } from 'zod';
 
 const app = new Hono();

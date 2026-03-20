@@ -1,10 +1,10 @@
 import { Hono } from 'hono';
-import { db } from '../db';
-import { events, apiKeys, projects } from '../db/schema';
+import { db } from '../db/index.js';
+import { events, apiKeys, projects } from '../db/schema.js';
 import { createEventSchema } from '@console-ai/domain';
 import { eq, and, desc } from 'drizzle-orm';
-import { apiKeyMiddleware, authMiddleware } from '../middleware';
-import { AppContext } from '../types';
+import { apiKeyMiddleware, authMiddleware } from '../middleware/index.js';
+import { AppContext } from '../types.js';
 import { ZodError } from 'zod';
 
 const app = new Hono<AppContext>();

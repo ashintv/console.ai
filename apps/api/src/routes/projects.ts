@@ -1,11 +1,11 @@
 import { Hono } from 'hono';
-import { db } from '../db';
-import { projects, apiKeys } from '../db/schema';
+import { db } from '../db/index.js';
+import { projects, apiKeys } from '../db/schema.js';
 import { createProjectSchema, updateProjectSchema, createApiKeySchema } from '@console-ai/domain';
 import { eq, and } from 'drizzle-orm';
-import { authMiddleware } from '../middleware';
-import { generateApiKey } from '../utils/auth';
-import { AppContext } from '../types';
+import { authMiddleware } from '../middleware/index.js';
+import { generateApiKey } from '../utils/auth.js';
+import { AppContext } from '../types.js';
 import { ZodError } from 'zod';
 
 const app = new Hono<AppContext>();

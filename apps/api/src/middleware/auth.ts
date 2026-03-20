@@ -1,6 +1,6 @@
 import { Next } from 'hono';
-import { verifyToken } from '../utils/auth';
-import { AppContextType } from '../types';
+import { verifyToken } from '../utils/auth.js';
+import { AppContextType } from '../types.js';
 
 export async function authMiddleware(c: AppContextType, next: Next) {
   const authHeader = c.req.header('Authorization');

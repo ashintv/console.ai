@@ -1,10 +1,10 @@
 import { Hono } from "hono";
-import { db } from "../db";
-import { events, apiKeys } from "../db/schema";
+import { db } from "../db/index.js";
+import { events, apiKeys } from "../db/schema.js";
 import { createEventSchema } from "@console-ai/domain";
 import { eq, and } from "drizzle-orm";
-import { apiKeyMiddleware, createApiRateLimit } from "../middleware";
-import { AppContext } from "../types";
+import { apiKeyMiddleware, createApiRateLimit } from "../middleware/index.js";
+import { AppContext } from "../types.js";
 import { ZodError } from "zod";
 import { Ai } from "@console-ai/ai";
 

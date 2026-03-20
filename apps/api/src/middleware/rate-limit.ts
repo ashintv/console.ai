@@ -1,5 +1,5 @@
 import { Context, Next } from 'hono';
-import { AppContextType } from '../types';
+import { AppContextType } from '../types.js';
 
 interface RateLimitStore {
   [key: string]: {

@@ -1,12 +1,12 @@
 import 'dotenv/config';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { AppContext } from './types';
+import { AppContext } from './types.js';
 
-import usersRouter from './routes/users';
-import projectsRouter from './routes/projects';
-import eventsRouter from './routes/events';
-import errorsRouter from './routes/errors';
+import usersRouter from './routes/users.js';
+import projectsRouter from './routes/projects.js';
+import eventsRouter from './routes/events.js';
+import errorsRouter from './routes/errors.js';
 
 import {
   logger,
@@ -14,7 +14,7 @@ import {
   createAuthRateLimit,
   securityHeaders,
   validation,
-} from './middleware';
+} from './middleware/index.js';
 
 const app = new Hono<AppContext>();
 
