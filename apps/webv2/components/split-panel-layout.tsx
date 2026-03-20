@@ -36,6 +36,8 @@ export function SplitPanelLayout({
           isDetailDialogOpen ? 'w-1/2 border-r' : 'w-full'
         }`}
       >
+
+        
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {leftContent}
         </div>
