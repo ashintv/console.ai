@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:web\"",
+    "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:webv2\"",
     "dev:api": "pnpm --filter @console-ai/api dev",
-    "dev:web": "pnpm --filter @console-ai/web dev",
+    "dev:webv2": "PORT=3001 pnpm --filter webv2 dev",
     "dev:example": "pnpm --filter @console-ai/example dev"
   },
   "devDependencies": {

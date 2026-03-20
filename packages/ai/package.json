@@ -21,8 +21,7 @@
     "tsx": "^4.21.0"
   },
   "dependencies": {
-    "@langchain/ollama": "^1.2.6",
-    "@console-ai/domain": "workspace:*"
-
+    "@console-ai/domain": "workspace:*",
+    "@langchain/ollama": "^1.2.6"
   }
 }
