@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { Nav } from '@/components/nav';
 import { MarkdownRenderer } from '@/components/markdown-renderer';
 import { AlertCircle, CheckCircle2, Clock, TrendingUp } from 'lucide-react';

@@ -5,6 +5,9 @@ import { cn } from "@/lib/utils";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/context/auth";
 
+// Disable static generation since we use client-side providers
+export const dynamic = 'force-dynamic';
+
 const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
 
 const geistSans = Geist({

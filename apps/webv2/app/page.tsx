@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import Link from 'next/link';
 import { ArrowRight, Code2, Shield, Zap, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
