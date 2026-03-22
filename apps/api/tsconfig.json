@@ -8,9 +8,10 @@
     "skipLibCheck": true,
     "strict": true,
     "resolveJsonModule": true,
+    "rootDir": "./src",
     "outDir": "./dist",
     "types": ["node"]
   },
-  "include": ["src/**/*", "drizzle.config.ts"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
